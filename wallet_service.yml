@@ -1,0 +1,59 @@
+version: "3.8"
+
+networks:
+  wallet_service_network:
+    name: "wallet_service_net"
+    driver: bridge
+  wallet_db_network:
+    name: "wallet_db_network"
+    driver: bridge
+
+services:
+  wallet_service:
+    build: ./
+    command: ./bin/app
+    volumes:
+      - ./docker/containers-configs/:/configs
+    ports:
+      - 8080:8080
+    networks:
+      - wallet_service_network
+      - wallet_db_network
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+    depends_on:
+      wallet_db:
+        condition: service_started
+    deploy:
+      mode: replicated
+      replicas: 1
+      endpoint_mode: dnsrr
+      restart_policy:
+        condition: unless-stopped
+    labels:
+      servicename: "wallet_service"
+      org.label-schema.group: "monitoring"
+
+  wallet_db:
+    restart: unless-stopped
+    image: postgres:16.0-alpine3.18
+    hostname: wallet_db
+    volumes:
+      - ./.container_data/database/postgres/data:/var/lib/postgresql/data
+      - ./db/init-up.sql:/docker-entrypoint-initdb.d/init.up.sql
+    ports:
+      - 5440:5432
+    networks:
+      - wallet_db_network
+    environment:
+       PGDATA: /var/lib/postgresql/data
+       POSTGRES_USER: ${DB_USERNAME}
+       PGUSER: ${DB_USERNAME}
+       POSTGRES_PASSWORD: ${DB_PASSWORD}
+       POSTGRES_DB: wallet_db
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

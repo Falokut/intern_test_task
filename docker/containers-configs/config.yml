@@ -1,0 +1,11 @@
+log_level: "debug" # supported levels: "panic", "fatal", "error", "warning" or "warn", "info", "debug", "trace"
+
+listen:
+  host: 0.0.0.0
+  port: 8080
+  
+db_config: 
+  host: wallet_db
+  port: 5432
+  ssl_mode: disable
+  db_name: wallet_db
